@@ -99,3 +99,71 @@ CREATE TABLE Voters
 
 -- Change this path to the correct location
 copy voters from '/projects/temp/philly_voter_list/VOTERSCITYWIDE.TXT' WITH CSV HEADER DELIMITER AS E'\t';
+
+
+CREATE TABLE voters_scrubbed
+(
+    pk SERIAL PRIMARY KEY,
+    ID_Number varchar(50) UNIQUE NOT NULL,
+    Sex VARCHAR(10),
+    Voter_Status VARCHAR(8),
+    Political_Party VARCHAR(16),
+    House TEXT,
+    HouseNoSuffix TEXT,
+    StreetNameComplete TEXT,
+    Apt TEXT,
+    Address_Line_2 TEXT,
+    City TEXT,
+    State VARCHAR(8),
+    Zip_Code TEXT,
+    MAddress_Line_1 TEXT,
+    MAddress_Line_2 TEXT,
+    MCity TEXT,
+    MState TEXT,
+    MZip_Code TEXT,
+    Last_Date_Voted DATE
+);
+
+SELECT AddGeometryColumn('public', 'voters_scrubbed', 'loc', 4326, 'POINT', 2);
+SELECT AddGeometryColumn('public', 'voters_scrubbed', 'mloc', 4326, 'POINT', 2);
+
+INSERT INTO voters_scrubbed (
+    ID_Number,
+    Sex,
+    Voter_Status,
+    Political_Party,
+    House,
+    HouseNoSuffix,
+    StreetNameComplete,
+    Apt,
+    Address_Line_2,
+    City,
+    State,
+    Zip_Code,
+    MAddress_Line_1,
+    MAddress_Line_2,
+    MCity,
+    MState,
+    MZip_Code,
+    Last_Date_Voted)
+    SELECT 
+        ID_Number,
+        Sex,
+        Voter_Status,
+        Political_Party,
+        House,
+        HouseNoSuffix,
+        StreetNameComplete,
+        Apt,
+        Address_Line_2,
+        City,
+        State,
+        Zip_Code,
+        MAddress_Line_1,
+        MAddress_Line_2,
+        MCity,
+        MState,
+        MZip_Code,
+        Last_Date_Voted
+        FROM voters;
+
