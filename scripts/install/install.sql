@@ -9,17 +9,17 @@
 -- \i /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql;
 -- \i /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql;
 
-\c postgres;
+-- \c postgres;
 -- update pg_database set datistemplate='t', datallowconn='f' where datname='template_postgis';
-create role pv with login password 'philly_voters';
-create database philly_voters with encoding='UTF8' owner=pv;
+-- create role pv with login password 'philly_voters';
+-- create database philly_voters with encoding='UTF8' owner=pv;
 -- create database philly_voters with encoding='UTF8' owner=pv template=template_postgis;
 
-\c philly_voters
+-- \c philly_voters
 -- alter table spatial_ref_sys owner to pv;
 -- alter table geometry_columns owner to pv;
 -- alter view geography_columns owner to pv;
-create schema pv authorization pv;
+-- create schema pv authorization pv;
 
 
 
@@ -98,7 +98,7 @@ CREATE TABLE Voters
 );
 
 -- Change this path to the correct location
-copy voters from '/projects/temp/philly_voter_list/VOTERSCITYWIDE.TXT' WITH CSV HEADER DELIMITER AS E'\t';
+copy voters from '/tmp/VOTERSCITYWIDE.TXT' WITH CSV HEADER DELIMITER AS E'\t';
 
 
 CREATE TABLE voters_scrubbed
