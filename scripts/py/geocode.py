@@ -10,22 +10,16 @@ url = "http://services.phila.gov/ULRS311/Data/Location/%s"
 
 
 def geocode(house, street, apt, address2, city, state, zipcode):
-    if house is None:
-        house = ""
-    if street is None:
-        street = ""
-    if apt is None:
-        apt = ""
-    if address2 is None:
-        address2 = ""
-    if city is None:
-        city = ""
-    if state is None:
-        state = ""
-    if zipcode is None:
-        zipcode = ""
+    house = house or ""
+    street = street or ""
+    apt = apt or ""
+    address2 = address2 or ""
+    city = city or ""
+    state = state or ""
+    zipcode = zipcode or ""
 
-    address = "%s %s %s %s %s, %s %s" % (house, street, apt, address2, city, state, zipcode)
+    # ULRS doesn't like apt and address2, so we omit them
+    address = "%s %s %s, %s %s" % (house, street, city, state, zipcode)
     address = quote(address)
     try:
         #print url % address
@@ -45,43 +39,44 @@ def geocode(house, street, apt, address2, city, state, zipcode):
 
 
 def main():
-    #Define our connection string
-    conn_string = "host='localhost' dbname='phillyvote' user='phillyvote' password='phillyvote'"
+    conn_string = "host='localhost' dbname='philly_voters' user='postgres' password='postgres'"
     print "Connecting to database\n	->%s" % (conn_string)
- 
-    # get a connection, if a connect cannot be made an exception will be raised here
     conn = psycopg2.connect(conn_string)
- 
-    # conn.cursor will return a cursor object, you can use this cursor to perform queries
     cursor = conn.cursor()
     print "Connected!\n"
 
-    offset = 0
-    if len(sys.argv) > 1:
-        offset = sys.argv[1]
-
-    cursor.execute("SELECT pk, House, StreetNameComplete, Apt, Address_Line_2, City, State, Zip_Code "\
-                   "FROM voters_scrubbed where loc is null and (geocode_attempted=false or geocode_attempted is null) LIMIT 100000 OFFSET %s" % offset)
+    n = 2000
+    offset = 0 if len(sys.argv) > 1 else sys.argv[1]
+    cursor.execute("SELECT pk, House, StreetNameComplete, Apt, Address_Line_2, City, State, Zip_Code "
+                   "FROM voters_scrubbed where loc is null and (geocode_attempted=false or geocode_attempted is null) "
+                   "LIMIT %s OFFSET %s" % (n, n *offset))
     adds = cursor.fetchall()
     writes = 0
+    count = 0
+    failed = 0
 
     for a in adds:
         pk = a[0]
         args = a[1:]
         address = geocode(*args)
-        #print "---> %s" % address
+        #print address
         if address:
-            cursor.execute("UPDATE voters_scrubbed SET loc = ST_SetSRID(ST_GeomFromText('POINT(%s %s)'), 4326), geocode_attempted=true WHERE pk = %s" %
-                           (address["x"], address["y"], pk))
+            cursor.execute("UPDATE voters_scrubbed "
+                           "SET loc = ST_SetSRID(ST_GeomFromText('POINT(%s %s)'), 4326), "
+                           "geocode_attempted=true WHERE pk = %s" %
+                               (address["x"], address["y"], pk))
         else:
+            failed += 1
             cursor.execute("UPDATE voters_scrubbed SET geocode_attempted=true WHERE pk = %s" % pk)
 
+        count += 1
         writes += 1
-        if writes > 5:
+        if writes > 50:
             conn.commit()
             writes = 0
 
     conn.commit()
+    print("%d rows processed with %d failures" % (count, failed))
 
  
 if __name__ == "__main__":
