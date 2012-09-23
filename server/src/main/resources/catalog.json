@@ -1,11 +1,11 @@
 {
- "catalog": "Your Data Catalog",
+ "catalog": "my-catalog",
  "stores": [
   {
    "store": "data:fs",
    "params": {
      "type": "fs",
-     "path": "src/main/resources/data"
+     "path": "/tmp/voter/"
    }
   }
  ]

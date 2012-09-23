@@ -1,4 +1,13 @@
 {
  "catalog": "my-catalog",
- "stores": []
+ "stores": [
+  {
+   "store": "data:fs",
+   "params": {
+     "cacheAll": "true",
+     "type": "fs",
+     "path": "/tmp/voter/"
+   }
+  }
+ ]
 }

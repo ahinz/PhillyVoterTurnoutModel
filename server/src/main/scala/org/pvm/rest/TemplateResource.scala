@@ -12,6 +12,7 @@ import geotrellis.io._
 import geotrellis.raster.op.local._
 import geotrellis.statistics.op.stat._
 import geotrellis.raster.op.transform._
+import geotrellis.raster.op.focal._
 import geotrellis.op._
 import geotrellis.vector.op.data._
 import geotrellis.process._
@@ -22,7 +23,7 @@ import javax.ws.rs.{GET, Path, DefaultValue, PathParam, QueryParam}
 import javax.ws.rs.core.{Response, Context}
 
 object AnApp {
-  val server = Server("myapp", "src/main/resources/myapp-catalog.json")
+  lazy val server = Server("myapp", "src/main/resources/myapp-catalog.json")
   lazy val cxn = Postgres.connect("jdbc:postgresql://localhost/phillyvote","phillyvote","phillyvote")
   
   def postgresReader = new PostgresReader(cxn)
@@ -38,8 +39,73 @@ class TemplateResource {
   def hello() = "<h2>Hello GeoTrellis!</h2>"
 }
 
+
 @Path("/wms/")
 class Boundaries {
+
+  //v = 0 # 0xFFFFFF00
+  //v = M # 0xFF0000FF
+  def v2g(v: Int, m: Int, colorMask: Int) = {
+    val v2inv = if (v > m) 0 else (m - v)
+    val v2 = if (v > m) m else v
+    val ch = (255.0 * v2.toDouble / m.toDouble).toInt
+    val chinv = 255 - ch
+    ((chinv << 24) + (chinv << 16) + (chinv << 8) + ch) | colorMask
+  }
+
+  @GET
+  @Path("voter_density")
+  def getd(@QueryParam("bbox") s1: String,
+          @QueryParam("width") s2: String,
+          @QueryParam("height") s3: String,
+          @QueryParam("party") p: String,
+          @QueryParam("rs") rs: String,
+          @QueryParam("ds") ds: String,
+          @Context req: HttpServletRequest) = {
+
+    val be = ParseExtent(s1)
+    val b = ((e:Extent) => RasterExtent(e, 5.0, 5.0, ((e.xmax - e.xmin)/5.0).toInt, ((e.xmax - e.xmin)/5.0).toInt)) <@> be
+    println("Loading: " + AnApp.server.run(b))
+    
+    val maxd = 35000 //Integer.parseInt(ds)
+    val maxr = if (p == "skew") 3000 else 15000 // Integer.parseInt(rs)
+
+    val rm = if (p == "diff" || p == "skew") {
+      val dems = LoadRaster("voter_density_d", b)
+      val reps = LoadRaster("voter_density_r", b)
+      val diff = Subtract(dems, reps)
+      //-3329
+      DoCell(diff, (c:Int) => if (c == Integer.MIN_VALUE) { 0x00 }
+             else if (c < 0) { v2g(-c,maxr,0xFF000000) }
+             else { v2g(c,maxd,0x0000FF00) })
+    } else {
+
+      val r = LoadRaster("voter_density_%s" format p, b)
+      val breaks = ColorBreaks(Array((0,0xFF000010), (1,0x00FF0010), (2, 0x0000FF10)))
+
+      val colorMask = 
+        if (p == "r") { 0xFF000000 }
+        else { 0x0000FF00 }
+      
+
+      // render the png
+      // val pngOp = RenderPNG(r, breaks, 0, true)
+      val maxv = if (p == "d") maxd else maxr
+      DoCell(r, (c:Int) => if (c > 0) { v2g(c,maxv, colorMask) } else { 0x00 })
+    }
+
+    val pngOp = RenderPngRgba(ResampleRaster(rm, ParseInt(s2), ParseInt(s3)))
+
+    try {
+      val img = AnApp.server.run(pngOp)
+      println("Done!")
+      AnApp.response("image/png")(img)
+    } catch {
+      case e => AnApp.response("text/plain")(e.toString)
+    }
+  }
+
+
   @GET
   @Path("/boundaries")
   def get(@QueryParam("bbox") s1: String,
