@@ -124,6 +124,9 @@ CREATE TABLE voters_scrubbed
     Last_Date_Voted DATE
 );
 
+ALTER TABLE voters_scrubbed
+    ADD COLUMN geocode_attempted BOOLEAN;
+
 SELECT AddGeometryColumn('public', 'voters_scrubbed', 'loc', 4326, 'POINT', 2);
 SELECT AddGeometryColumn('public', 'voters_scrubbed', 'mloc', 4326, 'POINT', 2);
 
@@ -166,4 +169,9 @@ INSERT INTO voters_scrubbed (
         MZip_Code,
         Last_Date_Voted
         FROM voters;
+
+-- ULRS Geocoder doesn't work well with 'ST' instead of 'STREET', so convert them
+UPDATE voters_scrubbed
+    SET StreetNameComplete = REPLACE(StreetNameComplete, ' ST', ' STREET')
+    WHERE StreetNameComplete LIKE '% ST%';
 

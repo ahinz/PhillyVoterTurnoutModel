@@ -4,3 +4,6 @@
 target
 server/.lib/
 
+*.pyc
+*.pyo
+
