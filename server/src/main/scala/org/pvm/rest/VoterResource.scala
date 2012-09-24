@@ -61,6 +61,10 @@ package object rest {
     })
   })
 
+  object HoldMe {
+    lazy val raster = AnApp.server.getRasterByName("voter_count", None)
+  }
+
   @Path("/zones")
   class SimpleZones {
     /**
@@ -73,7 +77,7 @@ package object rest {
     @GET
     def get(@QueryParam("layer") layer: String, 
             @QueryParam("simpl") s: String) = {
-      val voters = LoadRaster("voter_count")
+      val voters = HoldMe.raster //LoadRaster("voter_count")
 
       val sql = "SELECT ST_SimplifyPreserveTopology(ST_Transform(the_geom, 3857), " + s + "), cast(ward_num as int) from %s" format layer
       val features:Array[Polygon] = AnApp.postgresReader.getFeatures(sql, 0, 1).map(_.asInstanceOf[Polygon])

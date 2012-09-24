@@ -22,6 +22,7 @@ case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[I
   }
 
   def step2(raster:Raster, polygons:List[Polygon]) = {
+    val startTime = System.currentTimeMillis()
     // build our map to hold results
     // secretly build array
     var pmax = polygons.map(_.value).reduceLeft(_ max _)
@@ -53,14 +54,38 @@ case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[I
     val (col1, row1) = geo.mapToGrid(xmin, ymax)
     val (col2, row2) = geo.mapToGrid(xmax, ymin)
 
+    println("Elapsed: %d" format (System.currentTimeMillis() - startTime))
+
+    val c = geo.cols
+    var r = geo.rows
+    val zdata = new IntArrayRasterData(Array.ofDim[Int](c*r), c, r)
+    val zones = new Raster(zdata, geo)
+
+    println("Elapsed (data 0): %d" format (System.currentTimeMillis() - startTime))
+
     // burn our polygons onto a raster
-    val zones = Raster.empty(geo)
-    val zdata = zones.data.asArray.getOrElse(sys.error("need array"))
+    // val zones = Raster.empty(geo)
+    println("Elapsed (empty): %d" format (System.currentTimeMillis() - startTime))
+    // val zdata = zones.data.asArray.getOrElse(sys.error("need array"))
+
+    println("Elapsed (data): %d" format (System.currentTimeMillis() - startTime))
+
+    // Accumulate based on polygon value
+    // uses array based backend
+    val cb = new ARasterizer.CB[Array[Int]] {
+      def apply(d: Int, value: Int, amap: Array[Int]) = {
+        val inp = rdata(d)
+        if (inp != NODATA) {
+          amap(value) += rdata(d)
+        }
+        amap
+      }
+    }
+
+    //ARasterizer.rasterize(cb, histmap, geo, polygons.toArray)
     Rasterizer.rasterize(zones, polygons.toArray)
 
-    println(xmin + " | " + ymin + " | " + xmax + " | " + ymax)
-    println(col1 + " | " + row1 + " | " + col2 + " | " + row2)
-
+    println("Elapsed (after burn): %d" format (System.currentTimeMillis() - startTime))
     // iterate over the cells in our bounding box; determine its zone, then
     // looking in the raster for a value to add to the zonal histogram.
     var row = row1
@@ -79,6 +104,8 @@ case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[I
       }
       row += 1
     }
+
+    println("Elapsed (after sum): %d" format (System.currentTimeMillis() - startTime))
 
     // return an immutable mapping
     Result(polygons.foldLeft(Map[Int,Int]()) { 
