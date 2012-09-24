@@ -84,7 +84,13 @@ package object rest {
       //   case (k,v) => AnApp.server.run(GetHistogram(voters)) //reduceZonalHistogram(SplitRaster(voters, v), features))
       // }                       
 
-      val rastersR:Map[Int,Int] = AnApp.server.run(reduceZonalHistogram(SplitRaster(voters, Parties.Dem), features))
+      val rastersRslt = AnApp.server.getResult(PolygonalZonalCount(features, SplitRaster(voters, Parties.Dem)))
+
+      val rastersR = rastersRslt match {
+         case Complete(v, h) => { println(h.toPretty()); v }
+      }        
+
+      println(rastersR)
 
       val rasters = rastersR.foldLeft(Map[String,Int]()) { (m,kv) =>
         m + (kv._1.toString -> kv._2)
@@ -94,9 +100,6 @@ package object rest {
               
       AnApp.response("application/json")(write(rasters))
     }
-
-    def reduceZonalHistogram(r: Op[Raster], f: Array[Polygon]) =
-      sumHistograms <@> PolygonalZonalHistograms(f, r)
     
     val sumHistograms:Map[Int,Histogram] => Map[Int,Int] = 
       (a: Map[Int, Histogram]) =>

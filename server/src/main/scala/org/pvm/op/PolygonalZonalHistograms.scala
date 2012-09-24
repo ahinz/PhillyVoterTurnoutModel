@@ -12,7 +12,7 @@ import scala.math.{max,min}
  * Given a raster and an array of polygons, return a histogram summary of the cells
  * within each polygon.
  */
-case class PolygonalZonalHistograms(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[Int,Histogram]] {
+case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[Int,Int]] {
   def _run(context:Context) = runAsync(r :: ps.toList)
 
   val nextSteps:Steps = {
@@ -23,12 +23,9 @@ case class PolygonalZonalHistograms(ps:Array[Polygon], r:Op[Raster]) extends Op[
 
   def step2(raster:Raster, polygons:List[Polygon]) = {
     // build our map to hold results
-    var histmap = Map[Int,Histogram]()
-
-    // find all the unique values
-    for(p <- polygons) {
-      if (!histmap.get(p.value).isDefined) histmap = histmap + (p.value -> MapHistogram())
-    }
+    // secretly build array
+    var pmax = polygons.map(_.value).reduceLeft(_ max _)
+    var histmap = Array.ofDim[Int](pmax+1)
 
     // dereference some useful variables
     val geo   = raster.rasterExtent
@@ -75,8 +72,7 @@ case class PolygonalZonalHistograms(ps:Array[Polygon], r:Op[Raster]) extends Op[
         if (value != NODATA) {
           val zone  = zdata(i)
           if (zone != NODATA) {
-            val histogram = histmap(zone)
-            histogram.countItem(value)
+            histmap(zone) += value
           }
         }
         col += 1
@@ -85,7 +81,9 @@ case class PolygonalZonalHistograms(ps:Array[Polygon], r:Op[Raster]) extends Op[
     }
 
     // return an immutable mapping
-    Result(histmap)
+    Result(polygons.foldLeft(Map[Int,Int]()) { 
+       (m, pgon) => m + (pgon.value -> histmap(pgon.value))
+    })
   }
 
 }
