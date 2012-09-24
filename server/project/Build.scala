@@ -38,7 +38,7 @@ object MyBuild extends Build {
 
     resolvers += Resolver.url("sbt-plugin-releases", new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
 
-    javaOptions in run += "-Xmx2400M",
+    javaOptions in run += "-Xmx2G",
     // enable forking in run
     fork in run := true
   )
