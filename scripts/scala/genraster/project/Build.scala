@@ -30,7 +30,7 @@ object MyBuild extends Build {
       "NL4J Repository" at "http://nativelibs4java.sourceforge.net/maven/",
       "maven2 dev repository" at "http://download.java.net/maven/2",
       "Scala Test" at "http://www.scala-tools.org/repo-reloases/",
-      "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+      //"Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
       "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository",
       "sonatypeSnapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
       "JAI" at "http://download.osgeo.org/webdav/geotools/"
@@ -38,7 +38,7 @@ object MyBuild extends Build {
 
     resolvers += Resolver.url("sbt-plugin-releases", new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
 
-    javaOptions in run += "-Xmx4G",
+    javaOptions in run += "-Xmx2G",
     // enable forking in run
     fork in run := true
   )

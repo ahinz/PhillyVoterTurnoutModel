@@ -1,0 +1,45 @@
+Detected sbt version 0.12.0-RC1
+Using /home/vagrant/.sbt/0.12.0-RC1 as sbt dir, -sbt-dir to override.
+[0m[[0minfo[0m] [0mLoading project definition from /var/projects/PhillyVoterTurnoutModel/scripts/scala/genraster/project[0m
+[0m[[33mwarn[0m] [0mMultiple resolvers having different access mechanism configured with same name 'sbt-plugin-releases'. To avoid conflict, Remove duplicate project resolvers (`resolvers`) or rename publishing resolver (`publishTo`).[0m
+[0m[[0minfo[0m] [0mSet current project to geotrellis-template (in build file:/var/projects/PhillyVoterTurnoutModel/scripts/scala/genraster/)[0m
+[0m[[0minfo[0m] [0mCompiling 1 Scala source to /var/projects/PhillyVoterTurnoutModel/scripts/scala/genraster/target/scala-2.9.2/classes...[0m
+[0m[[0minfo[0m] [0mRunning org.pvm.GenerateRaster [0m
+[0m[[0minfo[0m] [0mExecuting sql SELECT ST_Transform(ST_SetSRID(loc, 4326), 900913),case political_party when 'D' then 1 when 'R' then 2 else '3' end from voters_scrubbed where loc is not null[0m
+[0m[[31merror[0m] [0mjava.lang.RuntimeException: invalid value 0[0m
+[0m[[31merror[0m] [0m	at scala.sys.package$.error(package.scala:27)[0m
+[0m[[31merror[0m] [0m	at org.pvm.GenerateRaster$$anonfun$4.apply(GenerateRaster.scala:50)[0m
+[0m[[31merror[0m] [0m	at org.pvm.GenerateRaster$$anonfun$4.apply(GenerateRaster.scala:44)[0m
+[0m[[31merror[0m] [0m	at scala.collection.IndexedSeqOptimized$class.foreach(IndexedSeqOptimized.scala:34)[0m
+[0m[[31merror[0m] [0m	at scala.collection.mutable.ArrayOps.foreach(ArrayOps.scala:38)[0m
+[0m[[31merror[0m] [0m	at org.pvm.GenerateRaster$delayedInit$body.apply(GenerateRaster.scala:44)[0m
+[0m[[31merror[0m] [0m	at scala.Function0$class.apply$mcV$sp(Function0.scala:34)[0m
+[0m[[31merror[0m] [0m	at scala.runtime.AbstractFunction0.apply$mcV$sp(AbstractFunction0.scala:12)[0m
+[0m[[31merror[0m] [0m	at scala.App$$anonfun$main$1.apply(App.scala:60)[0m
+[0m[[31merror[0m] [0m	at scala.App$$anonfun$main$1.apply(App.scala:60)[0m
+[0m[[31merror[0m] [0m	at scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:59)[0m
+[0m[[31merror[0m] [0m	at scala.collection.immutable.List.foreach(List.scala:76)[0m
+[0m[[31merror[0m] [0m	at scala.collection.generic.TraversableForwarder$class.foreach(TraversableForwarder.scala:30)[0m
+[0m[[31merror[0m] [0m	at scala.App$class.main(App.scala:60)[0m
+[0m[[31merror[0m] [0m	at org.pvm.GenerateRaster$.main(GenerateRaster.scala:28)[0m
+[0m[[31merror[0m] [0m	at org.pvm.GenerateRaster.main(GenerateRaster.scala)[0m
+[0m[[31merror[0m] [0m	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)[0m
+[0m[[31merror[0m] [0m	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)[0m
+[0m[[31merror[0m] [0m	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)[0m
+[0m[[31merror[0m] [0m	at java.lang.reflect.Method.invoke(Method.java:601)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.util.ScalaClassLoader$$anonfun$run$1.apply(ScalaClassLoader.scala:78)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.util.ScalaClassLoader$class.asContext(ScalaClassLoader.scala:24)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.util.ScalaClassLoader$URLClassLoader.asContext(ScalaClassLoader.scala:88)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.util.ScalaClassLoader$class.run(ScalaClassLoader.scala:78)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.util.ScalaClassLoader$URLClassLoader.run(ScalaClassLoader.scala:101)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.ObjectRunner$.run(ObjectRunner.scala:33)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.ObjectRunner$.runAndCatch(ObjectRunner.scala:40)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.MainGenericRunner.runTarget$1(MainGenericRunner.scala:56)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.MainGenericRunner.process(MainGenericRunner.scala:80)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.MainGenericRunner$.main(MainGenericRunner.scala:89)[0m
+[0m[[31merror[0m] [0m	at scala.tools.nsc.MainGenericRunner.main(MainGenericRunner.scala)[0m
+java.lang.RuntimeException: Nonzero exit code returned from runner: 1
+	at scala.sys.package$.error(package.scala:27)
+[0m[[31mtrace[0m] [0mStack trace suppressed: run [34mlast compile:run[0m for the full output.[0m
+[0m[[31merror[0m] [0m(compile:[31mrun[0m) Nonzero exit code returned from runner: 1[0m
+[0m[[31merror[0m] [0mTotal time: 18 s, completed Sep 24, 2012 2:14:11 AM[0m

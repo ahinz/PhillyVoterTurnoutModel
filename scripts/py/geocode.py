@@ -39,14 +39,22 @@ def geocode(house, street, apt, address2, city, state, zipcode):
 
 
 def main():
-    conn_string = "host='localhost' dbname='philly_voters' user='postgres' password='postgres'"
+    conn_string = "host='localhost' dbname='phillyvotes' user='phillyvotes' password='phillyvotes'"
     print "Connecting to database\n	->%s" % (conn_string)
     conn = psycopg2.connect(conn_string)
     cursor = conn.cursor()
     print "Connected!\n"
 
-    n = 2000
-    offset = 0 if len(sys.argv) > 1 else sys.argv[1]
+    n = 50
+    offset = 0
+    if len(sys.argv) > 1:
+        offset = int(sys.argv[1])
+
+    if len(sys.argv) > 2:
+        n = int(sys.argv[2])
+
+    print "Limit %s Offset %s" % (n, n *offset)
+
     cursor.execute("SELECT pk, House, StreetNameComplete, Apt, Address_Line_2, City, State, Zip_Code "
                    "FROM voters_scrubbed where loc is null and (geocode_attempted=false or geocode_attempted is null) "
                    "LIMIT %s OFFSET %s" % (n, n *offset))
@@ -59,7 +67,6 @@ def main():
         pk = a[0]
         args = a[1:]
         address = geocode(*args)
-        #print address
         if address:
             cursor.execute("UPDATE voters_scrubbed "
                            "SET loc = ST_SetSRID(ST_GeomFromText('POINT(%s %s)'), 4326), "
@@ -72,6 +79,7 @@ def main():
         count += 1
         writes += 1
         if writes > 50:
+            print "Commit (%d)" % count
             conn.commit()
             writes = 0
 
