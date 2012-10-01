@@ -42,14 +42,16 @@ object GenerateRaster extends App {
   val features = AnApp.postgresReader.getFeatures(sql, 0, 1).map(_.asInstanceOf[Point]).map(p => (rasterExtent.mapToGrid(p.x,p.y),p.value))
   val NODATA = Integer.MIN_VALUE
   for(((x,y), counttype) <- features) {
-    val v = mutableRasterData.get(x,y)
+    val vnd = mutableRasterData.get(x,y)
+    val v = if (vnd == NODATA) 0 else vnd
+
     val n = counttype match { // IIII IIII RRRR RRRR RRRR DDDD DDDD DDDD
-      case 1 => if (v == NODATA) 1 else (v & 0xFFFFF000) | ((v & 0xFFF) + 1) // dems
-      case 2 => if (v == NODATA) (1 << 12) else (v & 0xFF000FFF) | (((v >> 12) & 0xFFF) + 1) // reps
-      case 3 => if (v == NODATA) (1 << 24) else (v & 0x00FFFFFF) | (((v >> 24) & 0xFF) + 1) // ind
+      case 1 => 1
+      case 2 => (1 << 12)
+      case 3 => (1 << 24)
       case a => sys.error("invalid value %d" format a)
     }
-    mutableRasterData.set(x, y, n)
+    mutableRasterData.set(x, y, n + v)
   }
 
   val completedRaster = new Raster(mutableRasterData, rasterExtent)

@@ -55,11 +55,18 @@ package object rest {
    */
   case class SplitRaster(combined: Op[Raster], party: Op[Party]) extends Op2[Raster,Party,Raster](combined,party) ({
     (c: Raster, p: Party) => Result(p match {
-      case Parties.Dem => c.map(_ & 0xFFF)
-      case Parties.Rep => c.map(i => (i >> 12) & 0xFFF)
-      case Parties.Ind => c.map(_ >> 24)
+      case Parties.Dem => c.map(i => (i & 0xFFF))
+      case Parties.Rep => c.map(i => ((i >> 12) & 0xFFF))
+      case Parties.Ind => c.map(i => (i >> 24))
+      case _ => error("unknown party: " + p)
     })
   })
+
+  def splitRasterAll(c: Op[Raster]):Op[Array[Raster]] =
+    CollectArray(Array(
+      SplitRaster(c, Parties.Dem),
+      SplitRaster(c, Parties.Rep),
+      SplitRaster(c, Parties.Ind)))
 
   object HoldMe {
     lazy val raster = AnApp.server.getRasterByName("voter_count", None)
@@ -67,16 +74,17 @@ package object rest {
 
   @Path("/zones")
   class SimpleZones {
+
     /**
      * Perform a zonal histogram over the voter population
      * raster given a boundary layer
-     *
+     *     
      * The boundary layer must be a table in postgres
      * with a 'the_geom' column containing simple polygons
      */
-    @GET
+    @GET    
     def get(@QueryParam("layer") layer: String, 
-            @QueryParam("simpl") s: String) = {
+            @QueryParam("simpl") s: String) = {                      
       val voters = HoldMe.raster //LoadRaster("voter_count")
 
       val sql = "SELECT ST_SimplifyPreserveTopology(ST_Transform(the_geom, 3857), " + s + "), cast(ward_num as int) from %s" format layer
@@ -88,15 +96,13 @@ package object rest {
       //   case (k,v) => AnApp.server.run(GetHistogram(voters)) //reduceZonalHistogram(SplitRaster(voters, v), features))
       // }                       
 
-      val rastersRslt = AnApp.server.getResult(PolygonalZonalCount(features, SplitRaster(voters, Parties.Dem)))
+      val rastersRslt = AnApp.server.getResult(PolygonalZonalCount(features, splitRasterAll(voters)))
 
       val rastersR = rastersRslt match {
          case Complete(v, h) => { println(h.toPretty()); v }
       }        
 
-      println(rastersR)
-
-      val rasters = rastersR.foldLeft(Map[String,Int]()) { (m,kv) =>
+      val rasters = rastersR.foldLeft(Map[String,Array[Int]]()) { (m,kv) =>
         m + (kv._1.toString -> kv._2)
                                                         }
 

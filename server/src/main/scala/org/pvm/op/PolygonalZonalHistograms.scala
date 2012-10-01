@@ -12,25 +12,25 @@ import scala.math.{max,min}
  * Given a raster and an array of polygons, return a histogram summary of the cells
  * within each polygon.
  */
-case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[Int,Int]] {
-  def _run(context:Context) = runAsync(r :: ps.toList)
+case class PolygonalZonalCount(ps:Array[Polygon], rs:Op[Array[Raster]]) extends Op[Map[Int,Array[Int]]] {
+  def _run(context:Context) = runAsync(rs :: ps.toList)
 
   val nextSteps:Steps = {
     case raster :: polygons => {
-      step2(raster.asInstanceOf[Raster], polygons.asInstanceOf[List[Polygon]])
+      step2(raster.asInstanceOf[Array[Raster]], polygons.asInstanceOf[List[Polygon]])
     }
   }
 
-  def step2(raster:Raster, polygons:List[Polygon]) = {
+  def step2(rasters:Array[Raster], polygons:List[Polygon]) = {
     val startTime = System.currentTimeMillis()
     // build our map to hold results
     // secretly build array
     var pmax = polygons.map(_.value).reduceLeft(_ max _)
-    var histmap = Array.ofDim[Int](pmax+1)
+    var histmap = Array.ofDim[Int](rasters.length, pmax+1)
 
     // dereference some useful variables
-    val geo   = raster.rasterExtent
-    val rdata = raster.data.asArray.getOrElse(sys.error("need array"))
+    val geo   = rasters(0).rasterExtent
+    val rdatas = rasters.map(_.data.asArray.getOrElse(sys.error("need array")))
 
     val p0    = polygons(0)
     val rows  = geo.rows
@@ -56,10 +56,10 @@ case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[I
 
     println("Elapsed: %d" format (System.currentTimeMillis() - startTime))
 
-    val c = geo.cols
-    var r = geo.rows
-    val zdata = new IntArrayRasterData(Array.ofDim[Int](c*r), c, r)
-    val zones = new Raster(zdata, geo)
+    // val c = geo.cols
+    // var r = geo.rows
+    // val zdata = new IntArrayRasterData(Array.ofDim[Int](c*r), c, r)
+    // val zones = new Raster(zdata, geo)
 
     println("Elapsed (data 0): %d" format (System.currentTimeMillis() - startTime))
 
@@ -72,44 +72,49 @@ case class PolygonalZonalCount(ps:Array[Polygon], r:Op[Raster]) extends Op[Map[I
 
     // Accumulate based on polygon value
     // uses array based backend
-    val cb = new ARasterizer.CB[Array[Int]] {
-      def apply(d: Int, value: Int, amap: Array[Int]) = {
-        val inp = rdata(d)
-        if (inp != NODATA) {
-          amap(value) += rdata(d)
+    val cb = new ARasterizer.CB[Array[Array[Int]]] {
+      def apply(d: Int, value: Int, amap: Array[Array[Int]]) = {
+        var z = 0
+        while(z<amap.length) {
+          val inp = rdatas(z)(d)
+          if (inp != NODATA) {
+            amap(z)(value) += inp
+          }
+          z += 1;
         }
         amap
       }
     }
 
-    //ARasterizer.rasterize(cb, histmap, geo, polygons.toArray)
-    Rasterizer.rasterize(zones, polygons.toArray)
+    ARasterizer.rasterize(cb, histmap, geo, polygons.toArray)
+    //Rasterizer.rasterize(zones, polygons.toArray)
 
     println("Elapsed (after burn): %d" format (System.currentTimeMillis() - startTime))
     // iterate over the cells in our bounding box; determine its zone, then
     // looking in the raster for a value to add to the zonal histogram.
-    var row = row1
-    while (row < row2) {
-      var col = col1
-      while (col < col2) {
-        val i     = row * cols + col
-        val value = rdata(i)
-        if (value != NODATA) {
-          val zone  = zdata(i)
-          if (zone != NODATA) {
-            histmap(zone) += value
-          }
-        }
-        col += 1
-      }
-      row += 1
-    }
+
+    // var row = row1
+    // while (row < row2) {
+    //   var col = col1
+    //   while (col < col2) {
+    //     val i     = row * cols + col
+    //     val value = rdata(i)
+    //     if (value != NODATA) {
+    //       val zone  = zdata(i)
+    //       if (zone != NODATA) {
+    //         histmap(zone) += value
+    //       }
+    //     }
+    //     col += 1
+    //   }
+    //   row += 1
+    // }
 
     println("Elapsed (after sum): %d" format (System.currentTimeMillis() - startTime))
 
     // return an immutable mapping
-    Result(polygons.foldLeft(Map[Int,Int]()) { 
-       (m, pgon) => m + (pgon.value -> histmap(pgon.value))
+    Result(polygons.foldLeft(Map[Int,Array[Int]]()) { 
+       (m, pgon) => m + (pgon.value -> histmap.map(ar => ar(pgon.value)))
     })
   }
 
